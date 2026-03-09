@@ -1,0 +1,2 @@
+# TrickcalResearchCalculator
+グローバル版トリッカルの研究に必要な素材を計算するやつ
