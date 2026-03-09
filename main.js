@@ -89,6 +89,8 @@ function handleRowClick(gIdx) {
   }
   refreshAllRows();
   updateRangeBar();
+  // 始点・終点が揃ったら自動集計
+  if (startIdx !== null && endIdx !== null) calcResearch();
 }
 
 function refreshAllRows() {
@@ -123,7 +125,6 @@ function updateRangeBar() {
   document.getElementById('rbEnd').textContent   = endRow   ? shortLabel(endRow)   : '未設定';
   const count = l !== null && h !== null ? h - l + 1 : (l !== null ? 1 : 0);
   document.getElementById('rbCount').textContent = count + '件';
-  document.getElementById('calcBtn').style.display = (l !== null && h !== null) ? 'block' : 'none';
   document.getElementById('rbHint').textContent =
     startIdx === null ? '始点をクリックしてください' :
     endIdx   === null ? '終点をクリックしてください' : '';
@@ -150,13 +151,15 @@ function calcMaterials(itemId, amount = 1) {
   return result;
 }
 
-// rareごとに { rare: { itemName: count } } を返す（中間素材含む）
+// アイテム1種を展開して rareごとに総計を返す
+// 自分自身のrareに自分を加算 → 子を再帰展開（子は自分のレベルに加算される）
 function calcMaterialsByRare(itemId, amount = 1, result = {}) {
   const item = itemMap[itemId];
   if (!item) return result;
   const r = item.rare;
   if (!result[r]) result[r] = {};
   result[r][item.name] = (result[r][item.name] ?? 0) + amount;
+  // rare > 0 なら子素材を再帰集計（子は子自身のrareレベルに加算）
   if (r > 0 && item.need) {
     for (const n of item.need) {
       calcMaterialsByRare(n.id, n.amount * amount, result);
@@ -165,7 +168,7 @@ function calcMaterialsByRare(itemId, amount = 1, result = {}) {
   return result;
 }
 
-// 複数アイテムの need をまとめて rareごと集計
+// needリストをまとめてrareごと集計（研究・素材タブ共通）
 function mergeMaterialsByRare(needList) {
   const merged = {};
   for (const { id, amount } of needList) {
@@ -215,7 +218,21 @@ function renderMatsByRare(byRare, containerId) {
     sorted.forEach(([name, cnt]) => {
       const d = document.createElement('div');
       d.className = `mc rc${r}`;
-      d.innerHTML = `<span class="mn">${name}</span><span class="ma">× ${cnt}</span>`;
+      // rare > 0 の中間素材はホバーで必要素材の総量を表示
+      let tooltip = '';
+      if (r > 0) {
+        const item = ITEMS.find(i => i.name === name);
+        if (item && item.need) {
+          const rows = item.need.map(n => {
+            const ni = itemMap[n.id];
+            const nm = ni ? ni.name : `ID:${n.id}`;
+            const total = n.amount * cnt; // 1個分 × 総数
+            return `<div class="tt-row"><span class="tt-name">${nm}</span><span class="tt-amt">× ${total}</span></div>`;
+          }).join('');
+          tooltip = `<div class="mc-tooltip"><div class="tt-title">素材 (${name} ×${cnt})</div>${rows}</div>`;
+        }
+      }
+      d.innerHTML = `<span class="mn">${name}</span><span class="ma">× ${cnt}</span>${tooltip}`;
       grid.appendChild(d);
     });
     sec.appendChild(grid);
