@@ -136,6 +136,8 @@ function shortLabel(row) {
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────
+
+// rare:0 まで再帰展開した原材料を返す（従来通り）
 function calcMaterials(itemId, amount = 1) {
   const item = itemMap[itemId];
   if (!item) return {};
@@ -146,6 +148,36 @@ function calcMaterials(itemId, amount = 1) {
     for (const [name, cnt] of Object.entries(sub)) result[name] = (result[name] ?? 0) + cnt;
   }
   return result;
+}
+
+// rareごとに { rare: { itemName: count } } を返す（中間素材含む）
+function calcMaterialsByRare(itemId, amount = 1, result = {}) {
+  const item = itemMap[itemId];
+  if (!item) return result;
+  const r = item.rare;
+  if (!result[r]) result[r] = {};
+  result[r][item.name] = (result[r][item.name] ?? 0) + amount;
+  if (r > 0 && item.need) {
+    for (const n of item.need) {
+      calcMaterialsByRare(n.id, n.amount * amount, result);
+    }
+  }
+  return result;
+}
+
+// 複数アイテムの need をまとめて rareごと集計
+function mergeMaterialsByRare(needList) {
+  const merged = {};
+  for (const { id, amount } of needList) {
+    const byRare = calcMaterialsByRare(id, amount);
+    for (const [r, items] of Object.entries(byRare)) {
+      if (!merged[r]) merged[r] = {};
+      for (const [name, cnt] of Object.entries(items)) {
+        merged[r][name] = (merged[r][name] ?? 0) + cnt;
+      }
+    }
+  }
+  return merged;
 }
 
 function fmtTime(min) {
@@ -161,16 +193,33 @@ function effectBadge(t0, t1) {
   return `<span class="eb e${t0}">${TEXT.type[t0]} +${t1}</span>`;
 }
 
-function renderMats(mats, id) {
-  const g = document.getElementById(id);
-  g.innerHTML = '';
-  const sorted = Object.entries(mats).sort((a, b) => b[1] - a[1]);
-  if (!sorted.length) { g.innerHTML = '<div class="empty">素材なし</div>'; return; }
-  sorted.forEach(([name, cnt]) => {
-    const d = document.createElement('div');
-    d.className = 'mc';
-    d.innerHTML = `<span class="mn">${name}</span><span class="ma">× ${cnt}</span>`;
-    g.appendChild(d);
+const RARE_LABELS = { 0: '原材料　Rare 0', 1: '中間素材 Rare 1', 2: '中間素材 Rare 2', 3: '中間素材 Rare 3' };
+
+function renderMatsByRare(byRare, containerId) {
+  const wrap = document.getElementById(containerId);
+  wrap.innerHTML = '';
+  const rares = Object.keys(byRare).map(Number).sort((a, b) => b - a);
+  if (!rares.length) { wrap.innerHTML = '<div class="empty">素材なし</div>'; return; }
+  rares.forEach(r => {
+    const items = byRare[r];
+    const sorted = Object.entries(items).sort((a, b) => b[1] - a[1]);
+    if (!sorted.length) return;
+    const sec = document.createElement('div');
+    sec.className = 'mat-section';
+    const label = document.createElement('div');
+    label.className = `mat-section-label rl${r}`;
+    label.textContent = RARE_LABELS[r] ?? `Rare ${r}`;
+    sec.appendChild(label);
+    const grid = document.createElement('div');
+    grid.className = 'mgrid';
+    sorted.forEach(([name, cnt]) => {
+      const d = document.createElement('div');
+      d.className = `mc rc${r}`;
+      d.innerHTML = `<span class="mn">${name}</span><span class="ma">× ${cnt}</span>`;
+      grid.appendChild(d);
+    });
+    sec.appendChild(grid);
+    wrap.appendChild(sec);
   });
 }
 
@@ -227,19 +276,17 @@ function calcResearch() {
   const l = lo(), h = hi();
   if (l === null || h === null) return;
 
-  const allMats = {};
+  const allNeed = [];
   let totalMoney = 0, totalTime = 0;
   for (let i = l; i <= h; i++) {
     const row = ALL_ROWS[i];
     if (!row) continue;
     totalMoney += row.entry.money;
     totalTime  += row.entry.time;
-    row.entry.need.forEach(({ id, amount }) => {
-      const sub = calcMaterials(id, amount);
-      for (const [name, cnt] of Object.entries(sub)) allMats[name] = (allMats[name] ?? 0) + cnt;
-    });
+    row.entry.need.forEach(n => allNeed.push(n));
   }
-  const totalMat = Object.values(allMats).reduce((a, b) => a + b, 0);
+  const byRare = mergeMaterialsByRare(allNeed);
+  const totalMat = Object.values(byRare[0] ?? {}).reduce((a, b) => a + b, 0);
 
   document.getElementById('rSumbar').innerHTML = `
     <div class="si"><div class="sl">範囲</div><div class="sv">${h - l + 1}件</div></div>
@@ -247,7 +294,7 @@ function calcResearch() {
     <div class="si"><div class="sl">合計時間</div><div class="sv">${fmtTime(totalTime)}</div></div>
     <div class="si"><div class="sl">原材料合計</div><div class="sv g">${totalMat}個</div></div>
   `;
-  renderMats(allMats, 'rMats');
+  renderMatsByRare(byRare, 'rMats');
   const area = document.getElementById('rResult');
   area.style.display = 'block';
   area.style.animation = 'none';
@@ -277,16 +324,17 @@ function calcCraft() {
   const amount = Math.max(1, parseInt(document.getElementById('iAmt').value) || 1);
   const item = itemMap[itemId];
   if (!item) return;
-  const mats = calcMaterials(itemId, amount);
-  const total = Object.values(mats).reduce((a, b) => a + b, 0);
-  const kinds = Object.keys(mats).length;
+  const byRare = calcMaterialsByRare(itemId, amount);
+  const raw = byRare[0] ?? {};
+  const total = Object.values(raw).reduce((a, b) => a + b, 0);
+  const kinds = Object.keys(raw).length;
   document.getElementById('cSumbar').innerHTML = `
     <div class="si"><div class="sl">アイテム</div><div class="sv">${item.name} <span class="rb2 r${item.rare}">R${item.rare}</span></div></div>
     <div class="si"><div class="sl">必要数</div><div class="sv">× ${amount}</div></div>
-    <div class="si"><div class="sl">種類</div><div class="sv">${kinds}種</div></div>
-    <div class="si"><div class="sl">合計個数</div><div class="sv g">${total}個</div></div>
+    <div class="si"><div class="sl">原材料種類</div><div class="sv">${kinds}種</div></div>
+    <div class="si"><div class="sl">原材料合計</div><div class="sv g">${total}個</div></div>
   `;
-  renderMats(mats, 'cMats');
+  renderMatsByRare(byRare, 'cMats');
   const area = document.getElementById('cResult');
   area.style.display = 'block';
   area.style.animation = 'none';

@@ -77,9 +77,9 @@ h1{
 .ftag{font-size:.62rem;padding:1px 6px;border-radius:3px;background:rgba(77,166,255,.1);color:var(--accent);font-family:'DM Mono',monospace;}
 .rb2{display:inline-block;font-size:.6rem;font-weight:700;padding:1px 5px;border-radius:3px;margin-left:3px;font-family:'DM Mono',monospace;vertical-align:middle;}
 .r0{background:rgba(100,100,130,.2);color:#8888aa;}
-.r1{background:rgba(75,191,224,.15);color:#4bbfe0;}
-.r2{background:rgba(176,106,247,.15);color:#b06af7;}
-.r3{background:rgba(245,192,64,.15);color:#f5c040;}
+.r1{background:rgba(120,220,100,.15);color:#7ddc64;}
+.r2{background:rgba(60,140,255,.15);color:#4da6ff;}
+.r3{background:rgba(180,100,255,.15);color:#c06af7;}
 .sumbar{display:flex;gap:16px;flex-wrap:wrap;background:var(--s2);border:1px solid var(--border2);border-radius:10px;padding:12px 16px;margin-bottom:14px;}
 .si{display:flex;flex-direction:column;gap:2px;}
 .sl{font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
@@ -102,3 +102,24 @@ select option{background:var(--s2);}
 .seclabel{font-size:.65rem;letter-spacing:.13em;text-transform:uppercase;color:var(--muted);margin-bottom:8px;margin-top:14px;}
 .empty{text-align:center;color:var(--muted);padding:36px;font-size:.88rem;}
 .err{text-align:center;padding:40px;color:var(--pink);}
+
+/* mat sections by rare */
+.mat-section { margin-bottom: 14px; }
+.mat-section-label {
+  font-size: .63rem; letter-spacing: .13em; text-transform: uppercase;
+  font-weight: 800; margin-bottom: 7px; padding: 3px 8px;
+  border-radius: 4px; display: inline-block;
+}
+.rl0 { background: rgba(100,100,130,.15); color: #8888aa; }
+.rl1 { background: rgba(120,220,100,.12);  color: #7ddc64; }
+.rl2 { background: rgba(60,140,255,.12);   color: #4da6ff; }
+.rl3 { background: rgba(180,100,255,.12);  color: #c06af7; }
+
+.rc0 { border-color: rgba(100,100,130,.2); }
+.rc1 { border-color: rgba(120,220,100,.2); }
+.rc2 { border-color: rgba(60,140,255,.2);  }
+.rc3 { border-color: rgba(180,100,255,.2); }
+.rc0:hover { border-color: #8888aa; }
+.rc1:hover { border-color: #7ddc64; }
+.rc2:hover { border-color: #4da6ff; }
+.rc3:hover { border-color: #c06af7; }
