@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>研究・原材料計算ツール</title>
+<link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="wrap">
+  <h1>研究・原材料計算ツール</h1>
+  <p class="sub">段階タブで切り替え → 始点・終点をクリックして範囲指定</p>
+
+  <div id="loading">
+    <div class="spinner"></div>
+    データを読み込み中...
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="main-tabs">
+      <button class="main-tab on" onclick="switchMain('research')">研究計算</button>
+      <button class="main-tab" onclick="switchMain('craft')">素材計算</button>
+    </div>
+
+    <!-- 研究タブ -->
+    <div class="pane on" id="tab-research">
+      <div class="range-bar">
+        <div class="rb-item"><span class="rb-label">始点</span><span class="rb-val s" id="rbStart">未設定</span></div>
+        <div class="rb-div">→</div>
+        <div class="rb-item"><span class="rb-label">終点</span><span class="rb-val e" id="rbEnd">未設定</span></div>
+        <div class="rb-item"><span class="rb-label">範囲</span><span class="rb-val c" id="rbCount">0件</span></div>
+        <div class="rb-spacer"></div>
+        <span class="hint" id="rbHint">始点をクリックしてください</span>
+        <button class="btn ghost" onclick="resetRange()">リセット</button>
+        <button class="btn green" id="calcBtn" style="display:none" onclick="calcResearch()">集計する</button>
+      </div>
+
+      <div class="stage-tabs-wrap">
+        <div class="stage-tabs" id="stageTabs"></div>
+        <div id="stagePages"></div>
+      </div>
+
+      <div id="rResult" style="display:none;margin-top:4px;">
+        <div class="sumbar" id="rSumbar"></div>
+        <div class="seclabel">必要な原材料（合計）</div>
+        <div class="mgrid" id="rMats"></div>
+      </div>
+    </div>
+
+    <!-- 素材タブ -->
+    <div class="pane" id="tab-craft">
+      <div class="card">
+        <div class="clabel">素材を選択</div>
+        <div class="rowf">
+          <div class="f"><label>アイテム</label><select id="itemSel"></select></div>
+          <div class="f numw"><label>必要数</label><input type="number" id="iAmt" value="1" min="1" max="999"></div>
+          <button class="btn" onclick="calcCraft()">計算する</button>
+        </div>
+      </div>
+      <div id="cResult" style="display:none">
+        <div class="sumbar" id="cSumbar"></div>
+        <div class="seclabel">必要な原材料（rare: 0）</div>
+        <div class="mgrid" id="cMats"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="main.js"></script>
+</body>
+</html>
